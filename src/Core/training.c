@@ -75,8 +75,8 @@ NeuralNetwork *create_neural_network(int input_size)
     network->optimizer_type = OPTIMIZER_NONE;
     network->loss_function = LOSS_MSE;
     network->learning_rate = 0.01f;
-    network->l1_lambda = 0.0f;
-    network->l2_lambda = 0.0f;
+    network->l1_lambda = 0.7f;
+    network->l2_lambda = 0.5f;
     network->beta1 = 0.9f;
     network->beta2 = 0.999f;
     network->epsilon = 1e-7f;
@@ -184,8 +184,8 @@ CM_Error calculate_max_buffer_sizes(NeuralNetwork *network, int *max_input_size,
         }
         case LAYER_POOLING:
         {
-            PollingLayer *pooling = (PollingLayer *)current->layer;
-            int out_size = compute_polling_output_size(network->input_size, pooling->kernel_size, pooling->stride);
+            PoolingLayer *pooling = (PoolingLayer *)current->layer;
+            int out_size = compute_pooling_output_size(network->input_size, pooling->kernel_size, pooling->stride);
             if (out_size > *max_output_size)
             {
                 *max_output_size = out_size;
@@ -665,15 +665,15 @@ CM_Error forward_pass(NeuralNetwork *network, float *input, float *output, int i
         }
         case LAYER_POOLING:
         {
-            PollingLayer *pooling = (PollingLayer *)current->layer;
-            int new_size = compute_polling_output_size(current_size, pooling->kernel_size, pooling->stride);
+            PoolingLayer *pooling = (PoolingLayer *)current->layer;
+            int new_size = compute_pooling_output_size(current_size, pooling->kernel_size, pooling->stride);
             if (new_size < 0)
             {
                 cm_safe_free((void **)&layer_input);
                 cm_safe_free((void **)&layer_output);
                 return CM_INVALID_PARAMETER_ERROR;
             }
-            error = forward_polling(pooling, layer_input, layer_output, current_size);
+            error = forward_pooling(pooling, layer_input, layer_output, current_size);
             if (error != CM_SUCCESS)
             {
                 cm_safe_free((void **)&layer_input);
@@ -1366,7 +1366,7 @@ CM_Error free_neural_network(NeuralNetwork *network)
             free_maxpooling((MaxPoolingLayer *)temp->layer);
             break;
         case LAYER_POOLING:
-            free_polling((PollingLayer *)temp->layer);
+            free_pooling((PoolingLayer *)temp->layer);
             break;
         default:
             cm_safe_free(&(temp->layer));
